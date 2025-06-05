@@ -49,5 +49,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <!-- ADD THIS ITEMGROUP BELOW to reference the Common project -->
+  <ItemGroup>
+    <ProjectReference Include="..\ProjectScanner.Common\ProjectScanner.Common.csproj">
+      <Project>{24058d4a-579e-4e4b-9d41-e970a04a6006}</Project>
+      <Name>ProjectScanner.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -6,13 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO.Pipes;
+using ProjectScanner.Common;
 
-namespace ProjectScanner.ScannerA 
+namespace ProjectScanner.ScannerA
 {
     class Program
     {
-        private const string AgentId = "agent1"; 
-        private const string PipeName = "agent1"; 
+        private const string AgentId = "agent1";
+        private const string PipeName = "agent1";
 
         static async Task Main(string[] args)
         {
@@ -31,11 +32,11 @@ namespace ProjectScanner.ScannerA
                 return;
             }
 
-            
+
             try
             {
                 Process currentProcess = Process.GetCurrentProcess();
-            
+
                 currentProcess.ProcessorAffinity = new IntPtr(2);
                 Console.WriteLine($"Processor affinity set for ScannerA to core 1.");
             }
@@ -49,31 +50,31 @@ namespace ProjectScanner.ScannerA
             bool scanCompleted = false;
             bool dataSent = false;
 
-            
+
             ManualResetEvent scanDoneEvent = new ManualResetEvent(false);
 
 ]            Task scanTask = Task.Run(async () =>
-            {
-                try
-                {
-                    FileScanner scanner = new FileScanner(directoryPath);
-                    indexedWords = await scanner.ScanFilesAsync();
-                    scanCompleted = true;
-                    scanDoneEvent.Set(); 
-                    Console.WriteLine("File scanning task completed.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error during file scanning: {ex.Message}");
-                    scanCompleted = true; 
-                    scanDoneEvent.Set();
-                }
-            });
+             {
+                 try
+                 {
+                     FileScanner scanner = new FileScanner(directoryPath);
+                     indexedWords = await scanner.ScanFilesAsync();
+                     scanCompleted = true;
+                     scanDoneEvent.Set();
+                     Console.WriteLine("File scanning task completed.");
+                 }
+                 catch (Exception ex)
+                 {
+                     Console.WriteLine($"Error during file scanning: {ex.Message}");
+                     scanCompleted = true;
+                     scanDoneEvent.Set();
+                 }
+             });
 
-            
+
             Task sendTask = Task.Run(async () =>
             {
-                
+
                 scanDoneEvent.WaitOne();
 
                 if (!scanCompleted)
@@ -94,8 +95,8 @@ namespace ProjectScanner.ScannerA
                 {
                     try
                     {
-               
-                        await clientPipe.ConnectAsync(5000); 
+
+                        await clientPipe.ConnectAsync(5000);
                         Console.WriteLine($"Connected to Master pipe: {PipeName}");
 
                         AgentData dataToSend = new AgentData(AgentId, indexedWords);
@@ -113,16 +114,16 @@ namespace ProjectScanner.ScannerA
                     }
                     finally
                     {
-                        clientPipe.Close(); 
+                        clientPipe.Close();
                     }
                 }
             });
 
-           
+
             await Task.WhenAll(scanTask, sendTask);
 
             Console.WriteLine($"ProjectScanner.ScannerA (Agent ID: {AgentId}) finished.");
-            
+
         }
     }
 }
