@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F912C827-62C9-42A2-A68D-4C1EC8B285D5}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ConsoleApp1</RootNamespace>
-    <AssemblyName>ConsoleApp1</AssemblyName>
+    <RootNamespace>ProjectScanner.ScannerA</RootNamespace>  <!-- CORRECTED HERE -->
+    <AssemblyName>ProjectScanner.ScannerA</AssemblyName>  <!-- CORRECTED HERE -->
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,6 +48,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <!-- ADDED ITEMGROUP to reference the Common project -->
+  <ItemGroup>
+    <ProjectReference Include="..\ProjectScanner.Common\ProjectScanner.Common.csproj">
+      <Project>{24058d4a-579e-4e4b-9d41-e970a04a6006}</Project> <!--  Ensured the GUID matches the ACTUAL GUID from  ProjectScanner.Common.csproj file -->
+      <Name>ProjectScanner.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
