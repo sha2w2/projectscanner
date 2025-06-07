@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO.Pipes;
-using ProjectScanner.Common;
+using System.Threading;
+using System.Threading.Tasks;
+using ProjectScanner.Common; // Import the common library
 
 namespace ProjectScanner.ScannerA
 {
     class Program
     {
         private const string AgentId = "agent1";
-        private const string PipeName = "agent1";
+        private const string PipeName = "agent1"; // Master listens on this name
 
         static async Task Main(string[] args)
         {
@@ -21,7 +19,8 @@ namespace ProjectScanner.ScannerA
 
             if (args.Length == 0)
             {
-                Console.WriteLine("Usage: ScannerA.exe C:\ScanData\AgentA");
+                // Corrected: Using verbatim string literal for the path to avoid "Unrecognized escape sequence"
+                Console.WriteLine(@"Usage: ScannerA.exe C:\ScanData\AgentA");
                 return;
             }
 
@@ -32,12 +31,11 @@ namespace ProjectScanner.ScannerA
                 return;
             }
 
-
+            // Set processor affinity to core 1 (bitmask 2)
             try
             {
                 Process currentProcess = Process.GetCurrentProcess();
-
-                currentProcess.ProcessorAffinity = new IntPtr(2);
+                currentProcess.ProcessorAffinity = new IntPtr(2); // Core 1 (0-indexed)
                 Console.WriteLine($"Processor affinity set for ScannerA to core 1.");
             }
             catch (Exception ex)
@@ -48,34 +46,33 @@ namespace ProjectScanner.ScannerA
 
             List<WordIndexEntry> indexedWords = new List<WordIndexEntry>();
             bool scanCompleted = false;
-            bool dataSent = false;
+            // dataSent is used to determine if data was attempted to be sent, not necessarily successfully
+            bool dataSent = false; // Added dataSent variable for consistency
 
+            ManualResetEvent scanDoneEvent = new ManualResetEvent(false); // Used to synchronize tasks
 
-            ManualResetEvent scanDoneEvent = new ManualResetEvent(false);
-
-]            Task scanTask = Task.Run(async () =>
-             {
-                 try
-                 {
-                     FileScanner scanner = new FileScanner(directoryPath);
-                     indexedWords = await scanner.ScanFilesAsync();
-                     scanCompleted = true;
-                     scanDoneEvent.Set();
-                     Console.WriteLine("File scanning task completed.");
-                 }
-                 catch (Exception ex)
-                 {
-                     Console.WriteLine($"Error during file scanning: {ex.Message}");
-                     scanCompleted = true;
-                     scanDoneEvent.Set();
-                 }
-             });
-
+            // This is the 'scanTask' definition, ensure all braces are correctly matched.
+            Task scanTask = Task.Run(async () =>
+            {
+                try
+                {
+                    FileScanner scanner = new FileScanner(directoryPath); // Uses FileScanner from Common
+                    indexedWords = await scanner.ScanFilesAsync();
+                    scanCompleted = true;
+                    scanDoneEvent.Set(); // Signal completion
+                    Console.WriteLine("File scanning task completed.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error during file scanning: {ex.Message}");
+                    scanCompleted = true; // Still signal completion to unblock send task
+                    scanDoneEvent.Set();
+                }
+            });
 
             Task sendTask = Task.Run(async () =>
             {
-
-                scanDoneEvent.WaitOne();
+                scanDoneEvent.WaitOne(); // Wait for scanning to finish
 
                 if (!scanCompleted)
                 {
@@ -86,7 +83,7 @@ namespace ProjectScanner.ScannerA
                 if (indexedWords.Count == 0)
                 {
                     Console.WriteLine("No words indexed. Nothing to send to Master.");
-                    dataSent = true;
+                    dataSent = true; // Mark as sent even if nothing was sent
                     return;
                 }
 
@@ -95,14 +92,14 @@ namespace ProjectScanner.ScannerA
                 {
                     try
                     {
-
-                        await clientPipe.ConnectAsync(5000);
+                        // Increased timeout to 10 seconds to reduce premature TimeoutException
+                        await clientPipe.ConnectAsync(10000);
                         Console.WriteLine($"Connected to Master pipe: {PipeName}");
 
-                        AgentData dataToSend = new AgentData(AgentId, indexedWords);
-                        await PipeUtils.SendDataAsync(clientPipe, dataToSend);
+                        AgentData dataToSend = new AgentData(AgentId, indexedWords); // Uses AgentData from Common
+                        await PipeUtils.SendDataAsync(clientPipe, dataToSend); // Uses PipeUtils from Common
                         Console.WriteLine($"Successfully sent {indexedWords.Count} indexed words to Master.");
-                        dataSent = true;
+                        dataSent = true; // Mark as sent upon successful transmission
                     }
                     catch (TimeoutException)
                     {
@@ -119,11 +116,12 @@ namespace ProjectScanner.ScannerA
                 }
             });
 
-
-            await Task.WhenAll(scanTask, sendTask);
+            await Task.WhenAll(scanTask, sendTask); // Wait for both tasks to complete
 
             Console.WriteLine($"ProjectScanner.ScannerA (Agent ID: {AgentId}) finished.");
-
+            // Added Console.ReadKey() to keep the console window open after completion for easy viewing
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
     }
 }
