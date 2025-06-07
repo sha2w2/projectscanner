@@ -8,20 +8,20 @@ using System.Threading.Tasks;
 
 namespace ProjectScanner.Common
 {
-  
+
     public class FileScanner
     {
         private readonly string _directoryPath;
 
 
-     
         public FileScanner(string directoryPath)
-        {																																									`1
+        {
+            // The characters `1 at the end of this line were causing the error.
+            // They have been removed.
             _directoryPath = directoryPath;
         }
 
 
- 
         public async Task<List<WordIndexEntry>> ScanFilesAsync()
         {
             List<WordIndexEntry> indexedWords = new List<WordIndexEntry>();
@@ -82,4 +82,3 @@ namespace ProjectScanner.Common
         }
     }
 }
-
