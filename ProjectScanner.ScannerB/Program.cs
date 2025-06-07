@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
-using ProjectScanner.Common; 
+using ProjectScanner.Common; // Import the common library
 
 namespace ProjectScanner.ScannerB
 {
@@ -19,23 +19,23 @@ namespace ProjectScanner.ScannerB
 
             if (args.Length == 0)
             {
-                Console.WriteLine("Usage: ScannerB.exe C:\\ScanData\\AgentB");
+                // Corrected: Using verbatim string literal for the path to avoid "Unrecognized escape sequence"
+                Console.WriteLine(@"Usage: ScannerB.exe C:\ScanData\AgentB");
                 return;
             }
 
             string directoryPath = args[0];
-            
+
             if (!System.IO.Directory.Exists(directoryPath))
             {
                 Console.WriteLine($"Error: The specified directory does not exist: {directoryPath}");
                 return;
             }
 
-         
             try
             {
                 Process currentProcess = Process.GetCurrentProcess();
-                currentProcess.ProcessorAffinity = new IntPtr(4);
+                currentProcess.ProcessorAffinity = new IntPtr(4); // Set affinity to core 2 (bitmask 4)
                 Console.WriteLine($"Processor affinity set for ScannerB to core 2.");
             }
             catch (Exception ex)
@@ -46,6 +46,7 @@ namespace ProjectScanner.ScannerB
 
             List<WordIndexEntry> indexedWords = new List<WordIndexEntry>();
             bool scanCompleted = false;
+            // dataSent is used to determine if data was attempted to be sent, not necessarily successfully
             bool dataSent = false;
 
             ManualResetEvent scanDoneEvent = new ManualResetEvent(false);
@@ -57,22 +58,21 @@ namespace ProjectScanner.ScannerB
                     FileScanner scanner = new FileScanner(directoryPath);
                     indexedWords = await scanner.ScanFilesAsync();
                     scanCompleted = true;
-                    scanDoneEvent.Set(); 
+                    scanDoneEvent.Set();
                     Console.WriteLine("File scanning task completed.");
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error during file scanning: {ex.Message}");
-                    scanCompleted = true; 
+                    scanCompleted = true; // Still signal completion even on error to unblock send task
                     scanDoneEvent.Set();
                 }
             });
 
-           
+
             Task sendTask = Task.Run(async () =>
             {
-               
-                scanDoneEvent.WaitOne();
+                scanDoneEvent.WaitOne(); // Wait for the scanning task to complete
 
                 if (!scanCompleted)
                 {
@@ -83,7 +83,7 @@ namespace ProjectScanner.ScannerB
                 if (indexedWords.Count == 0)
                 {
                     Console.WriteLine("No words indexed. Nothing to send to Master.");
-                    dataSent = true; // !Mark as sent even if nothing was sent
+                    dataSent = true; // Mark as sent even if nothing was sent
                     return;
                 }
 
@@ -92,7 +92,8 @@ namespace ProjectScanner.ScannerB
                 {
                     try
                     {
-                        await clientPipe.ConnectAsync(5000); 
+                        // Increased timeout to 10 seconds to reduce premature TimeoutException
+                        await clientPipe.ConnectAsync(10000);
                         Console.WriteLine($"Connected to Master pipe: {PipeName}");
 
                         AgentData dataToSend = new AgentData(AgentId, indexedWords);
@@ -110,18 +111,17 @@ namespace ProjectScanner.ScannerB
                     }
                     finally
                     {
-                       
                         clientPipe.Close();
                     }
                 }
             });
-          
+
             await Task.WhenAll(scanTask, sendTask);
 
             Console.WriteLine($"ProjectScanner.ScannerB (Agent ID: {AgentId}) finished.");
+            // Added Console.ReadKey() to keep the console window open after completion for easy viewing
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
     }
 }
-
