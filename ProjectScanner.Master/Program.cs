@@ -66,10 +66,7 @@ namespace ProjectScanner.Master
             Console.WriteLine("\nConsolidated Word Index:");
 
             // Display the aggregated results
-            // The `IsEmpty` property is correct for ConcurrentBag.
-            // If you still see 'Cannot convert method group 'Count' to non-delegate type 'object'',
-            // ensure you're not accidentally typing `_consolidatedWordIndex.Count()` elsewhere
-            // instead of `_consolidatedWordIndex.Count` (property).
+      
             if (_consolidatedWordIndex.IsEmpty)
             {
                 Console.WriteLine("No data received from agents.");
